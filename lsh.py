@@ -1,6 +1,6 @@
 # Implementation of LSH and Linear search for Big data CSV file and plotting the differences
 
-#importing numpy,random,time,csv,matlab
+
 import numpy as np
 import random
 import time
@@ -11,9 +11,8 @@ from pyspark import SparkContext, SparkConf
 import csv
 import matplotlib.pyplot as plt
 from numpy import linalg as dt
-#from pyspark.sql import SQLContext
-#code change
-#from scipy.spatial import distance
+from pyspark.sql import SQLContext
+from scipy.spatial import distance
 
 #Class LSH - read the data into rdd , mapping hash vectors 
 #filtering the rdd . finding distances to find the nearest neighbours
@@ -28,37 +27,25 @@ class LSH:
         L - number of functions
         """
         # do not edit this function!
-        #self.sc = SparkContext()
-        conf = SparkConf()
-        self.sc = SparkContext().getOrCreate(conf = conf)
+        self.sc = SparkContext()
         self.k = k
         self.L = L
-        #get an RDD splitting thr rows and zipping with index values
         self.A = self.load_data(filename)
-        #get functions list to call create_function which will generate hash vectors
         self.functions = self.create_functions()
-        #Generate bucket which filter RDD if one hash vector of image same with the query_index
         self.hashed_A = self.hash_data()
     
-    def __del__(self):
-        #To stop the current sparksession
-        self.sc.stop()
-    # I have encountered pickling issue which mentions that i am attempting to refernce sparkcontext  
-    # from a broadcast variable, action or transformation - SPARK 5063
-    # To avoid the above error, i have used l1 function inside the lsh_search
-    # TODO: Implement this
-    '''def l1(self, u, v):
+    
+    def l1(self, u, v):
         """
         Finds the L1 distance between two vectors
         u and v are 1-dimensional Row objects
         """
-        d = dt.norm(np.array(u)-np.array(v))
-        return d
-        raise NotImplementedError'''
+        p=np.sum(abs(np.array(u)-np.array(v)))
+        return p
 
+    
     # load_data function will take the filename from the lsh object and will split the rows and convert them as strings
     # Those string rows are converetd to integer values and zipped with index and will return RDD
-    # TODO: Implement this
     def load_data(self, filename):
         """
         Loads the data into a spark DataFrame, where each row corresponds to
@@ -71,10 +58,10 @@ class LSH:
         df = self.sc.textFile(filename).map(lambda line: line.split(","))
         l = df.map(lambda w: [int(float(c)) for c in w]).zipWithIndex()
         return l
-        raise NotImplementedError
+#         raise NotImplementedError
+
 
     # This function will create hashvector of form 10101.. for the passed function from create_functions
-    # TODO: Implement this
     def create_function(self, dimensions, thresholds):
         """
         Creates a hash function from a list of dimensions and thresholds.
@@ -87,8 +74,9 @@ class LSH:
                 else:
                     s +='0'
             return s
-            raise NotImplementedError
+#             raise NotImplementedError
         return f
+
 
     # This function will take L and k values from lSH object and will generate functions list
     # Every time it will generate random values for dimensions and thresholds
@@ -114,8 +102,7 @@ class LSH:
             functions.append(self.create_function(dimensions, thresholds))
         return functions
 
-    # This function is implemented but never used
-    # TODO: Implement this
+    
     def hash_vector(self,v):
         """
         Hashes an individual vector (i.e. image).  This produces an array with L
@@ -125,10 +112,10 @@ class LSH:
         x = np.array([f(v[0]) for f in self.functions])
         #print (x)
         return x
-        raise NotImplementedError
+#         raise NotImplementedError
+    
     
     # Hash_data function will hash the vector for each row and will map to the rdd
-    # TODO: Implement this
     def hash_data(self):
         """
         Hashes the data in A, where each row is a datapoint, using the L
@@ -141,11 +128,11 @@ class LSH:
         #print(query.take(1))
         return query
         #raise NotImplementedError
-        raise NotImplementedError
 
+
+        
     # Get_candidates will filter the RDD, if any of hash vector matches with query_index hash vectors
     # If both vectors of one hash function same, it will place in the bucket
-    # TODO: Implement this
     def get_candidates(self,query_index):
         """
         Retrieve all of the points that hash to one of the same buckets 
@@ -158,13 +145,14 @@ class LSH:
         bucket = bucket1.filter(lambda z: (z[2] != query_index[2]) and (any(set(z[2]) & set(query_index[2]))))
         #print(bucket)
         return bucket
-        raise NotImplementedError
+#         raise NotImplementedError
+
+
 
     # LSH_search will call the get_candidates and will calculate distances and map them to the RDD
     # From RDD, we will pick distances and indexes to new RDD as tuple
     # RDD will be sorted by distance value and will calculate end time
     # with the provided neighbour value, it will return nearest neighbours and end time.
-    # TODO: Implement this
     def lsh_search(self,query_index, num_neighbors = 10):
         """
         Run the entire LSH algorithm
@@ -180,7 +168,8 @@ class LSH:
         distance_sorted = distance_sort.sortByKey()
         lsh_End_time = time.time()- start_time
         return (distance_sorted.take(num_neighbors),lsh_End_time)
-        raise NotImplementedError
+#         raise NotImplementedError
+
 
 # Plots images at the specified rows and saves them each to files.
 def plot(A, row_nums, base_filename):
@@ -191,8 +180,8 @@ def plot(A, row_nums, base_filename):
             im = im.convert('RGB')
         im.save(base_filename + "-" + str(row_num) + ".png")
 
+        
 # Finds the nearest neighbors to a given vector, using linear search.
-# TODO: Implement this
 def linear_search(A, query_index, num_neighbors):
     close_neighbors = {}
     
@@ -208,18 +197,18 @@ def linear_search(A, query_index, num_neighbors):
     
     linear_end_time = time.time() - linear_start_time
     return (sorted(close_neighbors.items(), key = lambda j:(j[1],j[0]))[:num_neighbors] ,linear_end_time)
-    raise NotImplementedError
+#     raise NotImplementedError
+
 
 # lsh_error will calculate the error between linearsearch and LSH distance
 # Write a function that computes the error measure
-# TODO: Implement this
 def lsh_error(LSH_Distance, Linear_Distance):
     Error_value = 0.0
     Lsh_distance_sum = sum(LSH_Distance)
     Linear_distance_sum = sum(Linear_Distance)
     Error_value = Lsh_distance_sum/Linear_distance_sum
     return Error_value
-    raise NotImplementedError
+#     raise NotImplementedError
 
 #### TESTS #####
 
@@ -240,164 +229,139 @@ class TestLSH(unittest.TestCase):
         self.assertTrue(np.array_equal(hash_vector(functions, A[0, :]), np.array([6, 14])))
         self.assertTrue(np.array_equal(hash_data(functions, A), np.array([[6, 14], [15, 77]])))
 
-    ### TODO: Write your tests here (they won't be graded, 
-    ### but you may find them helpful)
 
-
-# calling the main function
 if __name__ == '__main__':
 #    unittest.main() ### TODO: Uncomment this to run tests
     # create an LSH object using lsh = LSH(k=16, L=10)
     """
     Your code here
     """
-    # Opening patches.csv file and read into numpy array
-    with open('patches.csv','r') as f:
-        A = list(csv.reader(f, delimiter= ","))
-    A = np.array(A[:],dtype = np.float)
     
-    # calling the LSH class object with values k=24 and L=10
-    lsh = LSH('patches.csv',k=24,L=10)
-    # below will retrive the nearest neighbours and time for lsh search
-    dist_index,te = lsh.lsh_search(lsh.hashed_A.collect()[99],10)
-    #print("The value of L and k are: ["+str(self.L)+","+str(k)+"]")
-    # printing the ten nearest neighbours
-    print("The ten nearest neighbours with LSH search for given image are: ")
-    print(dist_index)
-    #printing the time taken for LSH search
-    print("Time taken for LSH_Search is: "+ str(te))
+    linearsearchtime=[]
+    lshsearchtime=[]
+    lsh=LSH("patches.csv",24,10)
+    A=pd.read_csv("patches.csv",header=None)
     
-    #plotting the images of nearest_neighbours in LSH search
-    row_lsh = []
-    lsh_distances = []
-    for i in range(len(dist_index)):
-        row_lsh.append(dist_index[i][1])
-        lsh_distances.append(dist_index[i][0])
-    plot(A,row_lsh,'image_LSH_Search')
-   
-    # for plotting nearest neighbours in linear search
-    row_linear = []
-    linear_distances =[]
-    # calling the linear search function to retrieve nearest neighbours and time taken for it.
-    linear_d,linear_t = linear_search(A, A[99], 10)
-    #printing the top ten nearest neighbours from linear search
-    print("The ten nearest neighbours with Linear search for given image are: ")
-    print(linear_d)
-    #printing the time taken for linear search
-    print("Time taken for Linear_Search is: "+ str(linear_t))
-    #plotting the images of nearest_neighbours in linear search
-    for i in range(len(dist_index)):
-        row_linear.append(linear_d[i][0])
-        linear_distances.append(linear_d[i][1])
-    plot(A,row_linear,'image_linear_Search')
-   # print(linear_distances)
-    #print(row_linear)
-    #calculating the error between linear search and lSH search
-    error_v = lsh_error(lsh_distances,linear_distances)
-    print("The Error value is: "+ str(error_v))
+    lsh_srh=[]
+    for i in range(100,1001,100):
+        start2=timeit.default_timer()
+        lsh_srh.append(lsh.lsh_search(i,3))
+        print(lsh_srh)
+        stop2=timeit.default_timer()
+        lshsearchtime.append(stop2-start2)
+    avgt2=sum(lshsearchtime)/len(lshsearchtime)
+    print(avgt2)
+    print("lsh")
+    print(lsh_srh)
     
-    # plotting the original image
-    plot(A,[99],'Original_image')
+    linsrh=[]
+    for i in range(100,1001,100):
+        start=timeit.default_timer()
+        linsrh.append(linear_search(A,i,3))
+        stop=timeit.default_timer()
+        linearsearchtime.append(stop-start)
+    print("lin")
+    print(linsrh)
+    avgtime_linear=sum(linearsearchtime)/len(linearsearchtime)
+    print(avgtime_linear)
     
-    # it will stop the current sparksesion
-    lsh.sc.stop()
+    errorvals=lsh_error(linsrh,lsh_srh)
+    print(errorvals)
     
-    # I tried running for all values of L and K by stopping the sparkcontext and re-run
-    # with new L , K values but it throws error as Python worker failed to connect back
-    # It's because it is trying to reconnect sparkcontext bnut it is failing
-    # I found some information on stackoverflow that it fails to connect again in the latest versions of spark
-    # Hence, commented the code below
-    #To run the below code in previous versions, please comment the above code and uncomment below
+    B = np.genfromtxt ('patches.csv', delimiter=",")
+    p1=[]
+    p2=[]
+    for i in range(len(linsrh[0])):
+        p1.append(linsrh[0][i][0])
     
-    """
-    #looping through L and getting the change in errors
-    error_l = []
-    for L in range(10,22,2):
-        with open('patches.csv','r') as f:
-            A = list(csv.reader(f, delimiter= ","))  
-        A = np.array(A[:],dtype = np.float)
-        lsh_distance = []
-        linear_dis = []
-        lsh_time = []
-        linear_time = []
-        lsh = LSH('patches.csv', k=24, L=L)
-        for i in range(99,1000,100):
-            distance = []
-            f,t = lsh.lsh_search(lsh.hashed_A.collect()[i], 3)
-            for i in range(len(f)):
-                distance.append(f[i][0])
-            lsh_distance.append(sum(distance))
-            lsh_time.append(t)
+    for j in range(len(lsh_srh[0])):
+        p2.append(lsh_srh[0][j][1])
+    
+    #plotting 10 nearesr neighbors for query index 100
+    plot(B, p1, "linear")
+    plot(B, p2, "lsh")
+    
+    
+    k = 24
+    L = [10,12,14,16,18,20]
+    l_error = []
+    for i in range(len(L)):
+        lsh=LSH("patches.csv",k=k,L=L[i])
+        A=pd.read_csv("patches.csv",header=None)
+    
+        lsh_srh=[]
+        for i in range(100,1001,100):
+            start2=timeit.default_timer()
+            lsh_srh.append(lsh.lsh_search(i,3))
+            print(lsh_srh)
+            stop2=timeit.default_timer()
+            lshsearchtime.append(stop2-start2)
+        avgt2=sum(lshsearchtime)/len(lshsearchtime)
+        print(avgt2)
+        print("lsh")
+        print(lsh_srh)
         
-            lid = []
-            ld,lt = linear_search(A, A[i], 3)
-            for i in range(len(ld)):
-                lid.append(ld[i][1])
-            linear_dis.append(sum(lid))
-            linear_time.append(lt)
-            
-        #print("Average Time for LSH search: ", sum(lsh_time)/10)   
-        error_l.append(lsh_error(lsh_distance, linear_dis))    
-        lsh.sc.stop()# stoping the sparkcontext
-        #error_l.append(lsh_error(lsh_distance, linear_dis))
-    
-    #looping through k and getting the change in errors 
-    error_k = []
-    for k in range(16,26,2):
-        with open('patches.csv','r') as f:
-            A = list(csv.reader(f, delimiter= ","))
-        A = np.array(A[:],dtype = np.float)
-        lsh_distance = []
-        linear_dis = []
-        lsh_time = []
-        linear_time = []
-        lsh = LSH('patches.csv', k=k , L=10)
-        for i in range(99,1000,100):
-            distance = []
-            f,t = lsh.lsh_search(lsh.hashed_A.collect()[i], 3)
-            for i in range(len(f)):
-                distance.append(f[i][0])
-            lsh_distance.append(sum(distance))
-            lsh_time.append(t)
-        
-            lid = []
-            ld,lt = linear_search(A, A[i], 3)
-            for i in range(len(ld)):
-                lid.append(ld[i][1])
-            linear_dis.append(sum(lid))
-            linear_time.append(lt)
-            
-        #print("Average Time for Linear search: ", sum(linear_time)/10)
-        error_k.append(lsh_error(lsh_distance, linear_dis))
-        lsh.sc.stop()   
-        #error_k.append(lsh_error(lsh_distance, linear_dis))
-        
-    #printed the average time in different cell when ran in jupyter
-        
-    print("Average Time for LSH search: ", sum(lsh_time)/10)
-    print("Average Time for Linear search: ", sum(linear_time)/10)
-        
-    #  print("Error is :",lsh_error(lsh_distance, linear_dis))
-    
+        linsrh=[]
+        for i in range(100,1001,100):
+            start=timeit.default_timer()
+            linsrh.append(linear_search(A,i,3))
+            stop=timeit.default_timer()
+            linearsearchtime.append(stop-start)
+        print("lin")
+        print(linsrh)
+        avgtime_linear=sum(linearsearchtime)/len(linearsearchtime)
+        print(avgtime_linear)
 
-    #plotting the L vs Error graph
-    plt.plot([10,12,14,16,18,20], error_l)
-    plt.xlabel('function of L')
-    plt.ylabel('Error Value')
-    plt.title('L vs Error Value')
+        errorvals=lsh_error(linsrh,lsh_srh)
+        l_error.append(errorvals)
+        
+    L = 10
+    k = [16,18,20,22,24]
+    k_error = []
+    for i in range(len(k)):
+    
+        lsh=LSH("patches.csv",k=k[i],L=L)
+        A=pd.read_csv("patches.csv",header=None)
+
+        lsh_srh=[]
+        for i in range(100,1001,100):
+            start2=timeit.default_timer()
+            lsh_srh.append(lsh.lsh_search(i,3))
+            print(lsh_srh)
+            stop2=timeit.default_timer()
+            lshsearchtime.append(stop2-start2)
+        avgt2=sum(lshsearchtime)/len(lshsearchtime)
+        print(avgt2)
+        print("lsh")
+        print(lsh_srh)
+        
+        linsrh=[]
+        for i in range(100,1001,100):
+            start=timeit.default_timer()
+            linsrh.append(linear_search(A,i,3))
+            stop=timeit.default_timer()
+            linearsearchtime.append(stop-start)
+        print("lin")
+        print(linsrh)
+        avgtime_linear=sum(linearsearchtime)/len(linearsearchtime)
+        print(avgtime_linear)
+
+        errorvals=lsh_error(linsrh,lsh_srh)
+        k_error.append(errorvals)
+        
+    #plotting k vs error
+    plt.plot([16,18,20,22,24],k_error)
+    plt.xlabel("function of K")
+    plt.ylabel("Error")
+    plt.title("K vs Error")
     plt.show()
-
-
-    #plotting the k vs Error graph
-    plt.plot([16,18,20,22,24], error_k)
-    plt.xlabel('function of K')
-    plt.ylabel('Error Value')
-    plt.title('K vs Error Value')
+    
+    
+    #plotting L vs error
+    plt.plot([10,12,14,16,18,20],l_error)
+    plt.xlabel("function of L")
+    plt.ylabel("Error")
+    plt.title("L vs Error")
     plt.show()
-
-
-    with open('patches.csv','r') as f:
-            A = list(csv.reader(f, delimiter= ","))
-    A = np.array(A[:],dtype = np.float)
-    plot(A,[99,100],'img')# plotting the 100th label
-    """
+    
+    
